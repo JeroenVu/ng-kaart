@@ -46,6 +46,12 @@ const RuleStyle = (condition: Expression, style: ol.style.Style) => ({
 // Valideer de regels en controleer de stijlen
 //
 
+export interface ExtraContext {
+  layerPosition: number;
+}
+
+export type ContextAwareStyleFunction = (extra: ExtraContext) => ol.StyleFunction;
+
 const jsonAwvV0RuleConfig: Interpreter<RuleStyleConfig> = (json: Object) => {
   const typeType: Interpreter<TypeType> = (o: string) =>
     o === "boolean" || o === "string" || o === "number" ? ok(o as TypeType) : fail(`Het type moet 'boolean' of 'string' of 'number' zijn`);
@@ -93,18 +99,20 @@ const jsonAwvV0RuleConfig: Interpreter<RuleStyleConfig> = (json: Object) => {
     .mapFailure(monoidString)(msg => `syntaxcontrole: ${msg}`);
 };
 
-export const jsonAwvV0RuleCompiler: Interpreter<ol.StyleFunction> = (json: Object) => jsonAwvV0RuleConfig(json).chain(compileRules);
+export const jsonAwvV0RuleCompiler: Interpreter<ContextAwareStyleFunction> = (json: Object) =>
+  jsonAwvV0RuleConfig(json).chain(compileRules);
 
 /////////////////////////////////////////////////////////////////
 // Typechecking en compilatie van de regels tot een StyleFunction
 //
 
-function compileRules(ruleCfg: RuleStyleConfig): Validation<ol.StyleFunction> {
+function compileRules(ruleCfg: RuleStyleConfig): Validation<ContextAwareStyleFunction> {
   // Een abstractie van het tuple (feature, resolution). Laat toe om de functies hierna wat compacter te schrijven, minder gegevens op de
   // stack te moeten zetten en eventueel eenvoudig andere "environment"-variabelen toe te voegen.
   interface Context {
     feature: ol.Feature;
     resolution: number;
+    layerPosition: number;
   }
 
   // Evaluator is een functie die at runtime aangeroepen wordt en de context omzet in misschien een waarde.
@@ -298,8 +306,9 @@ function compileRules(ruleCfg: RuleStyleConfig): Validation<ol.StyleFunction> {
     ruleCfg.rules
   );
 
-  return validatedCombinedRuleExpression.map((ruleExpression: RuleExpression) => (feature: ol.Feature, resolution: number) =>
-    // openlayers kan undefined wel aan, maar de typedefinitie declareert dat niet zo. Zucht.
-    ruleExpression({ feature: feature, resolution: resolution }).getOrElseValue((undefined as any) as ol.style.Style)
+  return validatedCombinedRuleExpression.map(
+    (ruleExpression: RuleExpression) => (extra: ExtraContext) => (feature: ol.Feature, resolution: number) =>
+      // openlayers kan undefined wel aan, maar de typedefinitie declareert dat niet zo. Zucht.
+      ruleExpression({ feature: feature, resolution: resolution, ...extra }).getOrElseValue((undefined as any) as ol.style.Style)
   );
 }

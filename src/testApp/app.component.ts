@@ -125,7 +125,7 @@ export class AppComponent {
     JSON.stringify(this.fietspadStijlDef)
   ).getOrElse(msg => {
     throw new Error(`slecht formaat ${msg}`);
-  });
+  })({ layerPosition: 1 });
 
   fietspadStyleMetOffset = offsetStyleFunction(this.fietspadStyle, "ident8", "zijderijbaan", 1);
 

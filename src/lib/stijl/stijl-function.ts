@@ -1,7 +1,7 @@
 import * as ol from "openlayers";
 
 import { Validation } from "./json-object-interpreting";
-import { jsonAwvV0RuleCompiler } from "./json-awv-v0-stijlfunctie";
+import { jsonAwvV0RuleCompiler, ContextAwareStyleFunction } from "./json-awv-v0-stijlfunctie";
 import * as oi from "./json-object-interpreting";
 
 ///////////////////////////////////////////////////
@@ -9,7 +9,7 @@ import * as oi from "./json-object-interpreting";
 //
 
 // type StyleFunction = (feature: (ol.Feature | ol.render.Feature), resolution: number) => (ol.style.Style | ol.style.Style[]);
-export function definitieToStyleFunction(encoding: string, definitieText: string): Validation<ol.StyleFunction> {
+export function definitieToStyleFunction(encoding: string, definitieText: string): Validation<ContextAwareStyleFunction> {
   if (encoding === "json") {
     return jsonDefinitieStringToRuleExecutor(definitieText);
   } else {
@@ -17,7 +17,7 @@ export function definitieToStyleFunction(encoding: string, definitieText: string
   }
 }
 
-function jsonDefinitieStringToRuleExecutor(definitieText: string): Validation<ol.StyleFunction> {
+function jsonDefinitieStringToRuleExecutor(definitieText: string): Validation<ContextAwareStyleFunction> {
   try {
     const unvalidatedJson = JSON.parse(definitieText);
     return compileRuleJson(unvalidatedJson);
@@ -26,7 +26,7 @@ function jsonDefinitieStringToRuleExecutor(definitieText: string): Validation<ol
   }
 }
 
-function compileRuleJson(definitie: Object): Validation<ol.StyleFunction> {
+function compileRuleJson(definitie: Object): Validation<ContextAwareStyleFunction> {
   return oi
     .field("version", oi.str)(definitie)
     .chain(version => {
