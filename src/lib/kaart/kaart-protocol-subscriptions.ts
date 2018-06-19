@@ -27,7 +27,8 @@ export type Subscription<Msg> =
   | GeometryChangedSubscription<Msg>
   | TekenenSubscription<Msg>
   | KaartClickSubscription<Msg>
-  | InfoBoodschappenSubscription<Msg>;
+  | InfoBoodschappenSubscription<Msg>
+  | StreetViewSubscription<Msg>;
 
 export interface Viewinstellingen {
   zoom: number;
@@ -130,6 +131,13 @@ export interface InfoBoodschappenSubscription<Msg> {
   readonly wrapper: (infoBoodschappen: Map<string, InfoBoodschap>) => Msg;
 }
 
+export interface StreetViewSubscription<Msg> {
+  readonly type: "StreetView";
+  readonly startedMsgGen: () => Msg;
+  readonly endedMsgGen: () => Msg;
+  readonly notfoundMsgGen: () => Msg;
+}
+
 ///////////////
 // Constructors
 //
@@ -206,4 +214,12 @@ export function GeometryChangedSubscription<Msg>(
 
 export function TekenenSubscription<Msg>(wrapper: (settings: Option<ke.TekenSettings>) => Msg): TekenenSubscription<Msg> {
   return { type: "Tekenen", wrapper: wrapper };
+}
+
+export function StreetViewSubscription<Msg>(
+  startedMsgGen: () => Msg,
+  endedMsgGen: () => Msg,
+  notfoundMsgGen: () => Msg
+): StreetViewSubscription<Msg> {
+  return { type: "StreetView", startedMsgGen: startedMsgGen, endedMsgGen: endedMsgGen, notfoundMsgGen: notfoundMsgGen };
 }

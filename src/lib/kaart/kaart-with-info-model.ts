@@ -39,3 +39,9 @@ export interface GeselecteerdeFeatures {
 export interface HoverFeature {
   readonly geselecteerd: Option<ol.Feature>;
 }
+
+export type StreetViewEvent = StreetViewStarted | StreetViewEnded | StreetViewNotFound;
+
+export type StreetViewStarted = "StreetViewStarted";
+export type StreetViewEnded = "StreetViewEnded";
+export type StreetViewNotFound = "StreetViewNotFound";

@@ -13,7 +13,7 @@ import { KaartClickMsg, kaartClickWrapper, KaartInternalMsg } from "../kaart-int
 import * as prt from "../kaart-protocol";
 import { KaartComponent } from "../kaart.component";
 
-export const StreetviewUiSelector = "Streetview";
+export const StreetViewUiSelector = "Streetview";
 
 @Component({
   selector: "awv-kaart-open-street-view",
@@ -44,7 +44,9 @@ export class KaartOpenStreetViewComponent extends KaartChildComponentBase implem
   toggleLuisterenOpKaartClicks(): void {
     if (this.actief) {
       this.stopLuisterenOpClickEvents();
+      this.dispatch(prt.StreetViewEndedCmd());
     } else {
+      this.dispatch(prt.StreetViewStartedCmd());
       this.startLuisterenOpClickEvents();
     }
   }

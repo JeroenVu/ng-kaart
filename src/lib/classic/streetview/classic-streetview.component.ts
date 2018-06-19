@@ -1,6 +1,6 @@
 import { Component } from "@angular/core";
 
-import { StreetviewUiSelector } from "../../kaart/open-street-view/kaart-open-street-view.component";
+import { StreetViewUiSelector } from "../../kaart/open-street-view/kaart-open-street-view.component";
 import { ClassicUIElementSelectorComponentBase } from "../common/classic-ui-element-selector-component-base";
 import { KaartClassicComponent } from "../kaart-classic.component";
 
@@ -10,6 +10,6 @@ import { KaartClassicComponent } from "../kaart-classic.component";
 })
 export class ClassicStreetviewComponent extends ClassicUIElementSelectorComponentBase {
   constructor(readonly kaart: KaartClassicComponent) {
-    super(StreetviewUiSelector, kaart);
+    super(StreetViewUiSelector, kaart);
   }
 }

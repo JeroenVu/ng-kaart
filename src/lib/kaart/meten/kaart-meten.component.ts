@@ -84,7 +84,7 @@ export class KaartMetenComponent extends KaartChildComponentBase implements OnIn
         () => kaartLogger.debug("De meten source is gestopt")
       );
 
-    this.internalMessage$
+    this.bindToLifeCycle(this.internalMessage$)
       .pipe(
         ofType<GeometryChangedMsg>("GeometryChanged"), //
         observeOnAngular(this.zone)

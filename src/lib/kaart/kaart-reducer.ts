@@ -513,7 +513,7 @@ export function kaartCmdReducer<Msg extends prt.KaartMsg>(
         fromPredicate(model.stdInteracties, l => !l.isEmpty(), "De standaard interacties zijn niet aanwezig").map(
           (stdInteracties: List<ol.interaction.Interaction>) => {
             stdInteracties.forEach(i => model.map.removeInteraction(i!));
-            return ModelAndEmptyResult({ ...model, fullScreen: none });
+            return ModelAndEmptyResult({ ...model, stdInteracties: List(), fullScreen: none });
           }
         )
       );
@@ -983,7 +983,22 @@ export function kaartCmdReducer<Msg extends prt.KaartMsg>(
       return ModelWithResult(model);
     }
 
-    function refreshKaartLinksWeergave(cmnd: prt.RefreshKaartLinksWeergave): ModelWithResult<Msg> {
+    function refreshKaartLinksWeergave(cmnd: prt.RefreshKaartLinksWeergaveCmd): ModelWithResult<Msg> {
+      return ModelWithResult(model);
+    }
+
+    function streetViewStarted(cmnd: prt.StreetViewStartedCmd): ModelWithResult<Msg> {
+      modelChanger.streetViewEventSubj.next("StreetViewStarted");
+      return ModelWithResult(model);
+    }
+
+    function streetViewEnded(cmnd: prt.StreetViewEndedCmd): ModelWithResult<Msg> {
+      modelChanger.streetViewEventSubj.next("StreetViewEnded");
+      return ModelWithResult(model);
+    }
+
+    function streetViewNotFound(cmnd: prt.StreetViewNotFoundCmd): ModelWithResult<Msg> {
+      modelChanger.streetViewEventSubj.next("StreetViewNotFound");
       return ModelWithResult(model);
     }
 
@@ -1106,6 +1121,22 @@ export function kaartCmdReducer<Msg extends prt.KaartMsg>(
         return modelWithSubscriptionResult("InfoBoodschappen", model.infoBoodschappenSubj.subscribe(t => msgConsumer(sub.wrapper(t))));
       }
 
+      function subscribeToStreetView(sub: prt.StreetViewSubscription<Msg>): ModelWithResult<Msg> {
+        return modelWithSubscriptionResult(
+          "StreetView",
+          modelChanges.streetViewEvent$.subscribe(e => {
+            switch (e) {
+              case "StreetViewEnded":
+                return msgConsumer(sub.endedMsgGen());
+              case "StreetViewStarted":
+                return msgConsumer(sub.startedMsgGen());
+              case "StreetViewNotFound":
+                return msgConsumer(sub.notfoundMsgGen());
+            }
+          })
+        );
+      }
+
       switch (cmnd.subscription.type) {
         case "Viewinstellingen":
           return subscribeToViewinstellingen(cmnd.subscription);
@@ -1139,6 +1170,8 @@ export function kaartCmdReducer<Msg extends prt.KaartMsg>(
           return subscribeToTekenen(cmnd.subscription);
         case "InfoBoodschap":
           return subscribeToInfoBoodschappen(cmnd.subscription);
+        case "StreetView":
+          return subscribeToStreetView(cmnd.subscription);
       }
     }
 
@@ -1244,6 +1277,12 @@ export function kaartCmdReducer<Msg extends prt.KaartMsg>(
         return zetUiElementOpties(cmd);
       case "RefreshKaartLinksWeergave":
         return refreshKaartLinksWeergave(cmd);
+      case "StreetViewStarted":
+        return streetViewStarted(cmd);
+      case "StreetViewEnded":
+        return streetViewEnded(cmd);
+      case "StreetViewNotFound":
+        return streetViewNotFound(cmd);
     }
   };
 }

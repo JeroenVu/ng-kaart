@@ -60,7 +60,10 @@ export type Command<Msg extends KaartMsg> =
   | VoegUiElementToe
   | VerwijderUiElement
   | ZetUiElementOpties
-  | RefreshKaartLinksWeergave;
+  | RefreshKaartLinksWeergaveCmd
+  | StreetViewStartedCmd
+  | StreetViewEndedCmd
+  | StreetViewNotFoundCmd;
 
 export interface SubscriptionResult {
   readonly subscription: RxSubscription;
@@ -343,6 +346,22 @@ export interface SluitInfoBoodschapCmd<Msg extends KaartMsg> {
   readonly msgGen: () => Option<prt.TypedRecord>;
 }
 
+export interface RefreshKaartLinksWeergaveCmd {
+  readonly type: "RefreshKaartLinksWeergave";
+}
+
+export interface StreetViewStartedCmd {
+  readonly type: "StreetViewStarted";
+}
+
+export interface StreetViewEndedCmd {
+  readonly type: "StreetViewEnded";
+}
+
+export interface StreetViewNotFoundCmd {
+  readonly type: "StreetViewNotFound";
+}
+
 ////////////////////////
 // constructor functies
 //
@@ -581,12 +600,24 @@ export function SluitInfoBoodschapCmd<Msg extends KaartMsg>(id: string, msgGen: 
   };
 }
 
-export interface RefreshKaartLinksWeergave {
-  readonly type: "RefreshKaartLinksWeergave";
-}
-
-export function RefreshKaarLinksWeergave(): RefreshKaartLinksWeergave {
+export function RefreshKaarLinksWeergave(): RefreshKaartLinksWeergaveCmd {
   return {
     type: "RefreshKaartLinksWeergave"
   };
+}
+
+const streetViewStartedCmd: StreetViewStartedCmd = { type: "StreetViewStarted" };
+const streetViewEndedCmd: StreetViewEndedCmd = { type: "StreetViewEnded" };
+const streetViewNotFoundCmd: StreetViewNotFoundCmd = { type: "StreetViewNotFound" };
+
+export function StreetViewStartedCmd(): StreetViewStartedCmd {
+  return streetViewStartedCmd;
+}
+
+export function StreetViewEndedCmd(): StreetViewEndedCmd {
+  return streetViewEndedCmd;
+}
+
+export function StreetViewNotFoundCmd(): StreetViewNotFoundCmd {
+  return streetViewNotFoundCmd;
 }
