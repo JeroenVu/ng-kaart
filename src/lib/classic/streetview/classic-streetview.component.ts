@@ -8,7 +8,7 @@ import { KaartClassicComponent } from "../kaart-classic.component";
   selector: "awv-kaart-streetview",
   template: ""
 })
-export class ClassicStreetviewComponent extends ClassicUIElementSelectorComponentBase {
+export class ClassicStreetViewComponent extends ClassicUIElementSelectorComponentBase {
   constructor(readonly kaart: KaartClassicComponent) {
     super(StreetViewUiSelector, kaart);
   }

@@ -171,7 +171,7 @@ export class AppComponent {
     // --- Widgets
     optieDivider3: { divider: true, value: true, label: "Widgets onderaan rechts" },
     achtergrond: { value: true, label: "Meerdere achtergrondlagen" },
-    streetview: { value: true, label: "Streetview" },
+    streetView: { value: true, label: "StreetView" },
     meten: { value: true, label: "Meten" },
     mijnlocatie: { value: true, label: "Mijn huidige locatie" },
     zoomknoppen: { value: true, label: "Zoomknoppen" },

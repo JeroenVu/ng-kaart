@@ -23,7 +23,7 @@ import { ClassicLegendePolygoonItemComponent } from "./legende/classic-legende-p
 import { ClassicMetenComponent } from "./meten/classic-meet.component";
 import { ClassicSchaalComponent } from "./schaal/classic-schaal.component";
 import { ClassicStandaardInteractiesComponent } from "./standaard-interacties/classic-standaard-interacties.component";
-import { ClassicStreetviewComponent } from "./streetview/classic-streetview.component";
+import { ClassicStreetViewComponent } from "./streetview/classic-streetview.component";
 import { ClassicVolledigSchermComponent } from "./volledig-scherm/classic-volledig-scherm.component";
 import { ClassicVoorwaardenComponent } from "./voorwaarden/classic-voorwaarden.component";
 import { ClassicZoekerComponent } from "./zoeker/classic-zoeker.component";
@@ -51,7 +51,7 @@ const components = [
   ClassicLegendeBolletjeItemComponent,
   ClassicLegendeImageItemComponent,
   ClassicLegendePolygoonItemComponent,
-  ClassicStreetviewComponent,
+  ClassicStreetViewComponent,
   ClassicZoomComponent,
   ClassicZoekerComponent,
   KaartClassicComponent

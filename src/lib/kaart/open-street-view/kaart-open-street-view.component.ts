@@ -13,7 +13,7 @@ import { KaartClickMsg, kaartClickWrapper, KaartInternalMsg } from "../kaart-int
 import * as prt from "../kaart-protocol";
 import { KaartComponent } from "../kaart.component";
 
-export const StreetViewUiSelector = "Streetview";
+export const StreetViewUiSelector = "StreetView";
 
 @Component({
   selector: "awv-kaart-open-street-view",
