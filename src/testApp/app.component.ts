@@ -1,5 +1,6 @@
 import { animate, style, transition, trigger } from "@angular/animations";
 import { Component, ElementRef, ViewChild, ViewEncapsulation } from "@angular/core";
+import { array } from "fp-ts";
 import { none, Option, some } from "fp-ts/lib/Option";
 import { List } from "immutable";
 import * as ol from "openlayers";
@@ -29,11 +30,11 @@ export interface FietspadSelectie {
     trigger("enterAnimation", [
       transition(":enter", [
         style({ opacity: 0, "max-height": 0 }),
-        animate("1.5s cubic-bezier(.25, .8, .25, 1)", style({ opacity: 1, "max-height": "1000px" }))
+        animate("0.35s cubic-bezier(.62,.28,.23,.99)", style({ opacity: 1, "max-height": "1000px" }))
       ]),
       transition(":leave", [
         style({ opacity: 1, "max-height": "1000px" }),
-        animate("0.5s cubic-bezier(.25, .8, .25, 1)", style({ opacity: 0, "max-height": 0 }))
+        animate("0.35s cubic-bezier(.62,.28,.23,.99)", style({ opacity: 0, "max-height": 0 }))
       ])
     ])
   ],
@@ -168,6 +169,8 @@ export class AppComponent {
     fixedHeaderLinksBoven: { value: true, label: "Vaste header in linker paneel" },
     zoeker: { value: true, label: "Zoeker" },
     lagenkiezer: { value: true, label: "Lagen" },
+    legende: { value: true, label: "Legende (enkel in combinatie met lagen)" },
+    kaartLinksBreedte: { value: false, label: "Custom breedte van 300px (default: 480px bij > 1240px en 360px bij <= 1240px)" },
     // --- Widgets
     optieDivider3: { divider: true, value: true, label: "Widgets onderaan rechts" },
     achtergrond: { value: true, label: "Meerdere achtergrondlagen" },
@@ -261,7 +264,7 @@ export class AppComponent {
       geometry: new ol.geom.Point(locatie)
     });
     feature.setStyle(this.pinIcon);
-    this.installaties.push(feature);
+    this.installaties = array.snoc(this.installaties, feature);
     setTimeout(() => this.addIcon(), 1000);
   }
 
@@ -324,6 +327,14 @@ export class AppComponent {
   getMijnLocatieZoom(): string {
     if (this.mogelijkeOpties["mijnlocatie"].value) {
       return "8";
+    } else {
+      return null;
+    }
+  }
+
+  getKaartLinksBreedte(): number {
+    if (this.mogelijkeOpties["kaartLinksBreedte"].value) {
+      return 300;
     } else {
       return null;
     }

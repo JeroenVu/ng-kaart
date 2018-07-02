@@ -21,17 +21,20 @@
       </button>
     </mat-menu>
 
-    <button mat-icon-button [matMenuTriggerFor]="zoekerMenu">
+    <button mat-icon-button [matMenuTriggerFor]="zoekerMenu" matTooltip="Toon zoekopties" matTooltipPosition="right">
       <mat-icon>menu</mat-icon>
     </button>
-    <input placeholder="{{getPlaceholder()}}" [formControl]="zoekVeld" [readOnly]="this.actieveZoeker !== 'Geoloket'" (keyup)="onKey($event)">
+    <input placeholder="{{getPlaceholder()}}" [formControl]="zoekVeld" [readOnly]="this.actieveZoeker !== 'Geoloket'" (keyup)="onKey($event)" #zoekVeldElement>
     <div class="zoek-bezig-indicator" *ngIf="isBusy()">
       <mat-spinner diameter="20"></mat-spinner>
     </div>
-    <button mat-icon-button (click)="zoek()">
+    <button mat-icon-button (click)="kuisZoekOp()" *ngIf="zoekVeld.dirty" [matTooltip]="alleZoekResultaten.length > 0 ? 'Wis invoer en zoekresultaten' : 'Wis invoer'">
+      <mat-icon>close</mat-icon>
+    </button>
+    <button mat-icon-button (click)="zoek()" matTooltip="Zoek of druk op &crarr;">
       <mat-icon>search</mat-icon>
     </button>
-    <button mat-icon-button *ngIf="heeftResultaatOfFout()" (click)="toggleResultaat()">
+    <button mat-icon-button *ngIf="heeftResultaatOfFout()" (click)="toggleResultaat()" [matTooltip]="toonResultaat ? 'Verberg zoekresultaten' : 'Toon zoekresultaten'">
       <mat-icon *ngIf="toonResultaat">expand_less</mat-icon>
       <mat-icon *ngIf="!toonResultaat">expand_more</mat-icon>
     </button>
@@ -100,7 +103,7 @@
     </div>
   </div>
   <div *ngIf="toonResultaat && heeftResultaatOfFout()" class="divider"></div>
-  <div class="zoeker-resultaat-box" *ngIf="toonResultaat">
+  <div class="zoeker-resultaat-box" *ngIf="toonResultaat" [@enterAnimation]>
     <div *ngFor="let resultaat of alleZoekResultaten" class="zoeker-resultaat" (click)="zoomNaarResultaat(resultaat)">
       <span [ngSwitch]="resultaat.icoon.type">
         <mat-icon *ngSwitchCase="'svg'" class="zoeker-resultaat-icoon" [svgIcon]="resultaat.icoon.name"></mat-icon>
@@ -109,7 +112,7 @@
       <span [innerHTML]="resultaat.omschrijving | highlight: zoekVeld.value"></span>
     </div>
     <div *ngIf="heeftFout()" class="divider"></div>
-    <div *ngFor="let fout of alleFouten" class="zoeker-resultaat zoeker-fout">
+    <div *ngFor="let fout of alleFouten" class="zoeker-resultaat zoeker-fout" [@enterAnimation]>
       <mat-icon>announcement</mat-icon>
       <span>{{fout.zoeker}}: {{fout.fout}}</span>
     </div>

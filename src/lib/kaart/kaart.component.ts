@@ -1,4 +1,5 @@
 import {
+  AfterViewChecked,
   AfterViewInit,
   Component,
   ElementRef,
@@ -22,7 +23,7 @@ import { delay, filter, last, map, merge, scan, shareReplay, startWith, switchMa
 
 import { asap } from "../util/asap";
 import { observeOnAngular } from "../util/observe-on-angular";
-import { observerOutsideAngular } from "../util/observer-outside-angular";
+import { observeOutsideAngular } from "../util/observer-outside-angular";
 import { emitSome, ofType } from "../util/operators";
 import { forEach } from "../util/option";
 
@@ -46,10 +47,11 @@ export const vacuousKaartMsgObservableConsumer: KaartMsgObservableConsumer = () 
   styleUrls: ["./kaart.component.scss"],
   encapsulation: ViewEncapsulation.Emulated // Omwille hiervan kunnen we geen globale CSS gebruiken, maar met Native werken animaties niet
 })
-export class KaartComponent extends KaartComponentBase implements OnInit, OnDestroy, AfterViewInit {
+export class KaartComponent extends KaartComponentBase implements OnInit, OnDestroy, AfterViewInit, AfterViewChecked {
   kaartLinksZichtbaar: boolean;
   kaartLinksToggleZichtbaar: boolean;
   kaartLinksScrollbarZichtbaar: boolean;
+  kaartLinksRefreshWeergaveBezig: boolean;
   private readonly modelChanger: ModelChanger = ModelChanger();
   private innerModelChanges: ModelChanges;
   private innerAanwezigeElementen$: Observable<Set<string>>;
@@ -58,6 +60,8 @@ export class KaartComponent extends KaartComponentBase implements OnInit, OnDest
   @ViewChild("map") mapElement: ElementRef;
   @ViewChild("kaartLinks") kaartLinksElement: ElementRef;
   @ViewChild("kaartFixedLinksBoven") kaartFixedLinksBovenElement: ElementRef;
+  @ViewChild("kaartLinksZichtbaarToggleKnop", { read: ElementRef })
+  kaartLinksZichtbaarToggleKnopElement: ElementRef;
 
   /**
    * Dit houdt heel de constructie bij elkaar. Ofwel awv-kaart-classic (in geval van declaratief gebruik) ofwel
@@ -85,6 +89,7 @@ export class KaartComponent extends KaartComponentBase implements OnInit, OnDest
   @Input() naam = "kaart";
   @Input() selectieModus: prt.SelectieModus = "none";
   @Input() hoverModus: prt.HoverModus = "off";
+  @Input() kaartLinksBreedte;
 
   // Dit dient om messages naar toe te sturen
 
@@ -104,7 +109,7 @@ export class KaartComponent extends KaartComponentBase implements OnInit, OnDest
     );
 
     this.kaartModel$ = this.initialising$.pipe(
-      observerOutsideAngular(zone),
+      observeOutsideAngular(zone),
       tap(() => this.messageObsConsumer(this.msgSubj)), // Wie de messageObsConsumer @Input gezet heeft, krijgt een observable van messages
       map(() => this.initieelModel()),
       tap(model => {
@@ -150,9 +155,8 @@ export class KaartComponent extends KaartComponentBase implements OnInit, OnDest
     return this.kaartCmd$.pipe(
       merge(this.internalCmdDispatcher.commands$),
       tap(c => kaartLogger.debug("kaart command", c)),
-      tap(c => this.checkKaartLinksRendering()),
       takeUntil(this.destroying$.pipe(delay(100))), // Een klein beetje extra tijd voor de cleanup commands
-      observerOutsideAngular(this.zone),
+      observeOutsideAngular(this.zone),
       scan((model: KaartWithInfo, cmd: prt.Command<any>) => {
         const { model: newModel, message } = red.kaartCmdReducer(cmd)(model, this.modelChanger, this.modelChanges, messageConsumer);
         kaartLogger.debug("produceert", message);
@@ -195,31 +199,85 @@ export class KaartComponent extends KaartComponentBase implements OnInit, OnDest
   }
 
   ngAfterViewInit() {
-    this.checkKaartLinksRendering();
+    this.kaartLinksRefreshWeergaveBezig = true;
+    setTimeout(() => {
+      this.bepaalKaartLinksMarginTopEnMaxHeight();
+      this.bepaalKaartLinksToggleZichtbaar();
+      this.kaartLinksScrollbarZichtbaar = this.isKaartLinksScrollbarNodig();
+      this.bepaalKaartLinksInitieelZichtbaar();
+      this.kaartLinksRefreshWeergaveBezig = false;
+    });
   }
 
-  checkKaartLinksRendering() {
+  bepaalKaartLinksMarginTopEnMaxHeight() {
     setTimeout(() => {
-      // Toggle pas tonen vanaf 40px hoogte.
-      this.kaartLinksToggleZichtbaar =
-        this.kaartFixedLinksBovenElement.nativeElement.offsetHeight + this.kaartLinksElement.nativeElement.offsetHeight >= 40;
-
-      // Als de scrollbar zichtbaar is andere styling toepassen (bvb: achtergrond een kleur geven).
-      this.kaartLinksScrollbarZichtbaar =
-        this.kaartLinksElement.nativeElement.scrollHeight > this.kaartLinksElement.nativeElement.offsetHeight;
-
-      setTimeout(() => {
-        // Als er een fixed header is bovenaan links moet er genoeg margin gegeven worden aan de kaart-links anders overlapt die.
-        this.kaartLinksElement.nativeElement.style.marginTop = this.kaartFixedLinksBovenElement.nativeElement.offsetHeight + "px";
-      }, 200);
-
+      // MarginTop correctie als de scrollbar verschijnt/verdwijnt
+      this.kaartLinksElement.nativeElement.style.marginTop = this.kaartFixedLinksBovenElement.nativeElement.clientHeight + "px";
       // Als er een fixed header is bovenaan links moet de max-height van kaart-links daar ook rekening mee houden.
       this.kaartLinksElement.nativeElement.style.maxHeight =
-        "calc(100% - " + this.kaartFixedLinksBovenElement.nativeElement.offsetHeight + "px - 8px)"; // -8px is van padding-top.
-    });
+        "calc(100% - " + this.kaartFixedLinksBovenElement.nativeElement.clientHeight + "px - 8px)"; // -8px is van padding-top.
+    }, 10);
+  }
+
+  bepaalKaartLinksToggleZichtbaar() {
+    // Toggle pas tonen vanaf 40px hoogte.
+    setTimeout(() => {
+      const nuZichtbaar = this.kaartLinksToggleZichtbaar;
+      this.kaartLinksToggleZichtbaar =
+        this.kaartFixedLinksBovenElement.nativeElement.clientHeight + this.kaartLinksElement.nativeElement.clientHeight >= 40;
+      if (nuZichtbaar !== this.kaartLinksToggleZichtbaar) {
+        this.bepaalKaartLinksBreedte(); // Als de toggle eerder niet zichtbaar was kan de breedte fout staan
+      }
+    }, 10);
+  }
+
+  bepaalKaartLinksInitieelZichtbaar() {
+    setTimeout(() => {
+      this.kaartLinksZichtbaar = this.mapElement.nativeElement.clientWidth > 620;
+      this.bepaalKaartLinksBreedte();
+    }, 750);
+  }
+
+  bepaalKaartLinksBreedte() {
+    if (!this.kaartLinksBreedte && this.mapElement.nativeElement.clientWidth <= 1240) {
+      this.kaartLinksBreedte = 360;
+    }
+    if (this.kaartLinksBreedte) {
+      setTimeout(() => {
+        this.kaartFixedLinksBovenElement.nativeElement.style.width = this.kaartLinksBreedte.toString() + "px";
+        this.kaartLinksElement.nativeElement.style.width = this.kaartLinksBreedte.toString() + "px";
+        if (this.kaartLinksZichtbaar) {
+          this.kaartLinksZichtbaarToggleKnopElement.nativeElement.style.left = this.kaartLinksBreedte.toString() + "px";
+        } else {
+          this.kaartLinksZichtbaarToggleKnopElement.nativeElement.style.left = "0";
+        }
+      }, 10);
+    }
+  }
+
+  ngAfterViewChecked() {
+    if (!this.kaartLinksRefreshWeergaveBezig) {
+      this.refreshKaartLinksWeergave();
+    }
+  }
+
+  refreshKaartLinksWeergave() {
+    // Om te vermijden dat er teveel refreshes gedaan worden en te wachten tot de animaties klaar zijn zit deze code in een timeout
+    this.kaartLinksRefreshWeergaveBezig = true;
+    setTimeout(() => {
+      this.kaartLinksScrollbarZichtbaar = this.isKaartLinksScrollbarNodig();
+      this.bepaalKaartLinksMarginTopEnMaxHeight();
+      this.bepaalKaartLinksToggleZichtbaar();
+      this.kaartLinksRefreshWeergaveBezig = false;
+    }, 750);
+  }
+
+  isKaartLinksScrollbarNodig(): boolean {
+    return this.kaartLinksElement.nativeElement.scrollHeight > this.kaartLinksElement.nativeElement.clientHeight;
   }
 
   toggleKaartLinks() {
     this.kaartLinksZichtbaar = !this.kaartLinksZichtbaar;
+    this.bepaalKaartLinksBreedte();
   }
 }

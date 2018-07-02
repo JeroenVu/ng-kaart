@@ -1,5 +1,6 @@
+import { animate, style, transition, trigger } from "@angular/animations";
 import { HttpErrorResponse } from "@angular/common/http";
-import { ChangeDetectorRef, Component, NgZone, OnDestroy, OnInit } from "@angular/core";
+import { ChangeDetectorRef, Component, ElementRef, NgZone, OnDestroy, OnInit, ViewChild } from "@angular/core";
 import { FormControl } from "@angular/forms";
 import { none } from "fp-ts/lib/Option";
 import { List, OrderedMap, Set } from "immutable";
@@ -28,7 +29,6 @@ import * as prt from "../../kaart/kaart-protocol";
 import { KaartComponent } from "../../kaart/kaart.component";
 import { kaartLogger } from "../../kaart/log";
 import { matchGeometryType } from "../../util/geometryTypes";
-
 import { compareResultaten, IconDescription, StringZoekInput, ZoekInput, ZoekResultaat, ZoekResultaten } from "../zoeker-base";
 
 export const ZoekerUiSelector = "Zoeker";
@@ -160,10 +160,23 @@ export abstract class GetraptZoekerComponent extends KaartChildComponentBase {
 @Component({
   selector: "awv-zoeker",
   templateUrl: "./zoeker-box.html",
-  styleUrls: ["./zoeker-box.scss"]
+  styleUrls: ["./zoeker-box.scss"],
+  animations: [
+    trigger("enterAnimation", [
+      transition(":enter", [
+        style({ opacity: 0, "max-height": 0 }),
+        animate("0.35s cubic-bezier(.62,.28,.23,.99)", style({ opacity: 1, "max-height": "400px" }))
+      ]),
+      transition(":leave", [
+        style({ opacity: 1, "max-height": "400px" }),
+        animate("0.35s cubic-bezier(.62,.28,.23,.99)", style({ opacity: 0, "max-height": 0 }))
+      ])
+    ])
+  ]
 })
 export class ZoekerBoxComponent extends KaartChildComponentBase implements OnInit, OnDestroy {
   zoekVeld = new FormControl();
+  @ViewChild("zoekVeldElement") zoekVeldElement: ElementRef;
   alleZoekResultaten: ZoekResultaat[] = [];
   alleFouten: Fout[] = [];
   legende: Map<string, IconDescription> = new Map<string, IconDescription>();
@@ -266,14 +279,18 @@ export class ZoekerBoxComponent extends KaartChildComponentBase implements OnIni
     super.ngOnDestroy();
   }
 
+  protected refreshUI(): void {
+    this.cd.detectChanges();
+  }
+
   toggleResultaat() {
     this.toonResultaat = !this.toonResultaat;
-    this.dispatch(prt.RefreshKaarLinksWeergave());
+    this.refreshUI();
   }
 
   toggleHelp() {
     this.toonHelp = !this.toonHelp;
-    this.dispatch(prt.RefreshKaarLinksWeergave());
+    this.refreshUI();
   }
 
   zoomNaarResultaat(resultaat: ZoekResultaat) {
@@ -284,12 +301,26 @@ export class ZoekerBoxComponent extends KaartChildComponentBase implements OnIni
   }
 
   zoek() {
-    this.increaseBusy();
-    this.dispatch({
-      type: "Zoek",
-      input: { type: "string", value: this.zoekVeld.value } as StringZoekInput,
-      zoekers: Set(),
-      wrapper: kaartLogOnlyWrapper
+    if (this.zoekVeld.value) {
+      this.toonResultaat = true;
+      this.increaseBusy();
+      this.dispatch({
+        type: "Zoek",
+        input: { type: "string", value: this.zoekVeld.value } as StringZoekInput,
+        zoekers: Set(),
+        wrapper: kaartLogOnlyWrapper
+      });
+    }
+  }
+
+  kuisZoekOp() {
+    this.maakResultaatLeeg();
+    this.focusOpZoekVeld();
+  }
+
+  focusOpZoekVeld() {
+    setTimeout(() => {
+      this.zoekVeldElement.nativeElement.focus();
     });
   }
 
@@ -310,8 +341,8 @@ export class ZoekerBoxComponent extends KaartChildComponentBase implements OnIni
 
   kiesZoeker(zoeker: ZoekerType) {
     this.maakResultaatLeeg();
-    this.busy = 0; // Voor alle zekerheid.
     this.actieveZoeker = zoeker;
+    this.focusOpZoekVeld();
   }
 
   getPlaceholder(): string {
@@ -326,7 +357,10 @@ export class ZoekerBoxComponent extends KaartChildComponentBase implements OnIni
   }
 
   maakResultaatLeeg() {
+    this.busy = 0;
+    this.toonResultaat = false;
     this.zoekVeld.setValue("");
+    this.zoekVeld.markAsPristine();
     this.alleFouten = [];
     this.alleZoekResultaten = [];
     this.extent = ol.extent.createEmpty();
@@ -336,7 +370,7 @@ export class ZoekerBoxComponent extends KaartChildComponentBase implements OnIni
   }
 
   private processZoekerAntwoord(nieuweResultaten: ZoekResultaten): KaartInternalMsg {
-    console.log("Process " + nieuweResultaten.zoeker);
+    kaartLogger.debug("Process " + nieuweResultaten.zoeker);
     this.alleZoekResultaten = this.alleZoekResultaten
       .filter(resultaat => resultaat.zoeker !== nieuweResultaten.zoeker)
       .concat(nieuweResultaten.resultaten);
